@@ -6,8 +6,9 @@
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
 #define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
 #define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);  // initialize screen
 
+//////////////////////////////  Following are a load of bitmaps for the screen      //////////////////////////////////////////
 // 'tank', 88x49px
 const unsigned char tank [] PROGMEM = {
 	0x80, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x01, 0x80, 0x00, 0x00, 0x20, 0x00, 
@@ -203,33 +204,37 @@ const unsigned char measure [] PROGMEM = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-#define in1 6
-#define in2 7
-#define out 8
+////////////// define pins /////////////////
+#define in1 6     // tank inlet relay
+#define in2 7     // tank inlet relay
+#define out 8     // measure tank drain relay
 
-#define com1 A0
-#define com2 A1
+#define com1 A0   // define com lines for communication with AECU02
+#define com2 A1   //
 
-long startTime = 0;
-long drainStartTime = 0;
-long onTime = 7000;
-long drainOnTime = 1000;
+long startTime = 0;        // long used to store millis() 
+long drainStartTime = 0;   // Same but osed for the drain cycle
+long onTime = 7000;        // amount of milliseconds to tap water from tanks
+long drainOnTime = 1000;   // ----||---------------- from measure tank
 
-bool physical = true;
-bool initialize = true;
-bool drain = false;
+bool physical = true;      // Bool to decide weather or not relays sholud be switched, or if only Serial.prints should be used (useful to virtually test tank-scaleability)
+bool initialize = true;    // A bool used to know if tapping should be opened (first run of the loop)
+bool drain = false;        // Same, but with draining
 
-byte innValves[] = {in1, in2};
-int tankIndex = 0;
+byte innValves[] = {in1, in2};   // store the valve-pins in an array, so that they can be itterated over in a loop (scaleability)
+int tankIndex = 0;               // index in the above array
 
 void setup() {
+  /////////////////  turn screen on and set text-parameters /////////////////////777
   display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS);
   display.clearDisplay();
   display.setTextSize(2);             // Normal 1:1 pixel scale
   display.setTextColor(SSD1306_WHITE);        // Draw white text
   display.setCursor(0,0);
 
+  //////// start serial  ////////////
   Serial.begin(9600);
+  ////////// initial relay pins  /////////////
   pinMode(in1, OUTPUT);
   pinMode(in2, OUTPUT);
   pinMode(out, OUTPUT);
